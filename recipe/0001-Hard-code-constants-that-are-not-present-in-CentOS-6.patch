@@ -1,0 +1,40 @@
+From 842781432a8c7b3c5c7cc24a8cce736227b2d3e8 Mon Sep 17 00:00:00 2001
+From: Chris Burr <christopher.burr@cern.ch>
+Date: Tue, 2 Jun 2020 09:13:43 +0200
+Subject: [PATCH] Hard code constants that are not present in CentOS 6
+
+---
+ src/dir_scan.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/src/dir_scan.c b/src/dir_scan.c
+index e145ac2..8b8ce92 100644
+--- a/src/dir_scan.c
++++ b/src/dir_scan.c
+@@ -63,18 +63,18 @@ static struct dir_ext buf_ext[1];
+ int exclude_kernfs; /* Exclude Linux pseudo filesystems */
+ 
+ static int is_kernfs(unsigned long type) {
+-  if(type == BINFMTFS_MAGIC ||
+-     type == BPF_FS_MAGIC ||
++  if(type == 0x42494e4d ||
++     type == 0xcafe4a11 ||
+      type == CGROUP_SUPER_MAGIC ||
+-     type == CGROUP2_SUPER_MAGIC||
++     type == 0x63677270||
+      type == DEBUGFS_MAGIC ||
+      type == DEVPTS_SUPER_MAGIC ||
+      type == PROC_SUPER_MAGIC ||
+-     type == PSTOREFS_MAGIC ||
++     type == 0x6165676C ||
+      type == SECURITYFS_MAGIC ||
+      type == SELINUX_MAGIC ||
+      type == SYSFS_MAGIC ||
+-     type == TRACEFS_MAGIC)
++     type == 0x74726163)
+     return 1;
+ 
+   return 0;
+-- 
+2.26.2
+
