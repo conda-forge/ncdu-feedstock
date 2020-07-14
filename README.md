@@ -5,7 +5,7 @@ Home: https://dev.yorhel.nl/ncdu
 
 Package license: MIT
 
-Feedstock license: BSD 3-Clause
+Feedstock license: BSD-3-Clause
 
 Summary: NCurses Disk Usage
 
