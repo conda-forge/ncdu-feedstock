@@ -1,40 +1,56 @@
-From 842781432a8c7b3c5c7cc24a8cce736227b2d3e8 Mon Sep 17 00:00:00 2001
+From cadb6424d333f9683d34c0e99c3f805c5d1f9f41 Mon Sep 17 00:00:00 2001
 From: Chris Burr <christopher.burr@cern.ch>
-Date: Tue, 2 Jun 2020 09:13:43 +0200
+Date: Fri, 2 Jul 2021 15:54:47 +0200
 Subject: [PATCH] Hard code constants that are not present in CentOS 6
 
 ---
- src/dir_scan.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ src/dir_scan.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
 diff --git a/src/dir_scan.c b/src/dir_scan.c
-index e145ac2..8b8ce92 100644
+index 87b416b..ea5e37b 100644
 --- a/src/dir_scan.c
 +++ b/src/dir_scan.c
-@@ -63,18 +63,18 @@ static struct dir_ext buf_ext[1];
- int exclude_kernfs; /* Exclude Linux pseudo filesystems */
- 
- static int is_kernfs(unsigned long type) {
--  if(type == BINFMTFS_MAGIC ||
--     type == BPF_FS_MAGIC ||
-+  if(type == 0x42494e4d ||
+@@ -67,15 +67,21 @@ static int is_kernfs(unsigned long type) {
+   if(
+ #ifdef BINFMTFS_MAGIC
+      type == BINFMTFS_MAGIC ||
++#else
++     type == 0x42494e4d ||
+ #endif
+ #ifdef BPF_FS_MAGIC
+      type == BPF_FS_MAGIC ||
++#else
 +     type == 0xcafe4a11 ||
+ #endif
+ #ifdef CGROUP_SUPER_MAGIC
       type == CGROUP_SUPER_MAGIC ||
--     type == CGROUP2_SUPER_MAGIC||
-+     type == 0x63677270||
+ #endif
+ #ifdef CGROUP2_SUPER_MAGIC
+      type == CGROUP2_SUPER_MAGIC||
++#else
++     type == 0x63677270 ||
+ #endif
+ #ifdef DEBUGFS_MAGIC
       type == DEBUGFS_MAGIC ||
-      type == DEVPTS_SUPER_MAGIC ||
-      type == PROC_SUPER_MAGIC ||
--     type == PSTOREFS_MAGIC ||
-+     type == 0x6165676C ||
+@@ -88,6 +94,8 @@ static int is_kernfs(unsigned long type) {
+ #endif
+ #ifdef PSTOREFS_MAGIC
+      type == PSTOREFS_MAGIC ||
++#else
++     type ==  0x6165676C ||
+ #endif
+ #ifdef SECURITYFS_MAGIC
       type == SECURITYFS_MAGIC ||
-      type == SELINUX_MAGIC ||
-      type == SYSFS_MAGIC ||
--     type == TRACEFS_MAGIC)
-+     type == 0x74726163)
-     return 1;
- 
-   return 0;
+@@ -100,6 +108,8 @@ static int is_kernfs(unsigned long type) {
+ #endif
+ #ifdef TRACEFS_MAGIC
+      type == TRACEFS_MAGIC ||
++#else
++      type == 0x74726163 ||
+ #endif
+      0
+     )
 -- 
-2.26.2
+2.28.0
 
