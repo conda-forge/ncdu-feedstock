@@ -5,15 +5,12 @@ c_compiler_version:
 cdt_name:
 - cos7
 channel_sources:
-- conda-forge,defaults
+- conda-forge
 channel_targets:
 - conda-forge main
 docker_image:
 - quay.io/condaforge/linux-anvil-ppc64le
 ncurses:
-- '6.2'
-pin_run_as_build:
-  ncurses:
-    max_pin: x.x
+- '6'
 target_platform:
 - linux-ppc64le

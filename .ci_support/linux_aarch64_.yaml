@@ -15,9 +15,6 @@ channel_targets:
 docker_image:
 - quay.io/condaforge/linux-anvil-aarch64
 ncurses:
-- '6.2'
-pin_run_as_build:
-  ncurses:
-    max_pin: x.x
+- '6'
 target_platform:
 - linux-aarch64
