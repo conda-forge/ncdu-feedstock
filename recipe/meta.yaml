@@ -1,5 +1,5 @@
 {% set name = "ncdu" %}
-{% set version = "1.16" %}
+{% set version = "2.6" %}
 
 package:
   name: {{ name|lower }}
@@ -7,24 +7,21 @@ package:
 
 source:
   url: https://dev.yorhel.nl/download/{{ name }}-{{ version }}.tar.gz
-  sha256: 2b915752a183fae014b5e5b1f0a135b4b408de7488c716e325217c2513980fd4
-  patches:
-    - 0001-Hard-code-constants-that-are-not-present-in-CentOS-6.patch
+  sha256: 3f471ebd38b56e60dab80c27e3af1d826666957f02d9e8419b149daaf7ade505
 
 build:
   number: 0
-  skip: true  # [win]
+  skip: true  # [win or ppc64le]
 
 requirements:
   build:
     - {{ compiler('c') }}
-    - make
-    - autoconf
+    - {{ stdlib('c') }}
+    - zig
     - pkg-config
   host:
     - ncurses
-  run:
-    - ncurses
+    - zstd
 
 test:
   commands:
@@ -33,8 +30,7 @@ test:
 about:
   home: https://dev.yorhel.nl/ncdu
   license: MIT
-  license_family: MIT
-  license_file: COPYING
+  license_file: LICENSE/MIT.txt
   summary: NCurses Disk Usage
   description: |
     Ncdu is a disk usage analyzer with an ncurses interface. It is designed to
@@ -47,4 +43,5 @@ about:
 
 extra:
   recipe-maintainers:
+    - danielnachun
     - chrisburr
