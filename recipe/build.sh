@@ -2,6 +2,9 @@
 
 set -o xtrace -o nounset -o pipefail -o errexit
 
+unset HTTP_PROXY
+unset HTTPS_PROXY
+
 case ${target_platform} in
     linux-64 )
         zig build --prefix ${PREFIX} -Doptimize=ReleaseFast -Dtarget=x86_64-linux-gnu.2.17 -Dcpu=core2;;
