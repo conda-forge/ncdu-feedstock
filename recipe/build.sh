@@ -10,6 +10,8 @@ case ${target_platform} in
         zig build --prefix ${PREFIX} -Doptimize=ReleaseFast -Dtarget=x86_64-linux-gnu.2.17 -Dcpu=core2;;
     linux-aarch64 )
         zig build --prefix ${PREFIX} -Doptimize=ReleaseFast -Dtarget=aarch64-linux-gnu.2.17 -Dcpu=generic;;
+    linux-ppc64le )
+        zig build --prefix ${PREFIX} -Doptimize=ReleaseFast -Dtarget=powerpc-linux-gnu.2.17;;
     osx-64 )
         zig build --prefix ${PREFIX} -Dpie=true -Doptimize=ReleaseFast -Dcpu=core2;;
     osx-arm64 )
