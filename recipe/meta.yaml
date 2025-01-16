@@ -30,7 +30,7 @@ test:
 about:
   home: https://dev.yorhel.nl/ncdu
   license: MIT
-  license_file: LICENSE/MIT.txt
+  license_file: LICENSES/MIT.txt
   summary: NCurses Disk Usage
   description: |
     Ncdu is a disk usage analyzer with an ncurses interface. It is designed to
