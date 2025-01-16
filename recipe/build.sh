@@ -9,7 +9,7 @@ case ${target_platform} in
     linux-64 )
         zig build --prefix ${PREFIX} -Doptimize=ReleaseFast -Dtarget=x86_64-linux-gnu.2.17 -Dcpu=core2;;
     linux-aarch64 )
-        zig build --prefix ${PREFIX} -Doptimize=ReleaseFast -Dtarget=aarch64-linux-gnu.2.17 -Dcpu=core2;;
+        zig build --prefix ${PREFIX} -Doptimize=ReleaseFast -Dtarget=aarch64-linux-gnu.2.17 -Dcpu=baseline;;
     osx-64 )
         zig build --prefix ${PREFIX} -Dpie=true -Doptimize=ReleaseFast -Dcpu=core2;;
     osx-arm64 )
