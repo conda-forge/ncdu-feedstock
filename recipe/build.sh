@@ -13,7 +13,7 @@ case ${target_platform} in
     osx-64 )
         zig build --prefix ${PREFIX} -Dpie=true -Doptimize=ReleaseFast -Dcpu=core2;;
     osx-arm64 )
-        zig build --prefix ${PREFIX} -Dpie=true -Doptimize=ReleaseFast -Dcpu=apple_m1;;
+        zig build --prefix ${PREFIX} -Dpie=true -Doptimize=ReleaseFast -Dtarget=aarch64-macos.11.0 -Dcpu=apple_m1;;
 esac
 
 mkdir -p ${PREFIX}/share/man/man1
