@@ -1,5 +1,5 @@
 {% set name = "ncdu" %}
-{% set version = "1.22" %}
+{% set version = "2.9" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://dev.yorhel.nl/download/{{ name }}-{{ version }}.tar.gz
-  sha256: 0ad6c096dc04d5120581104760c01b8f4e97d4191d6c9ef79654fa3c691a176b
+  sha256: 75f0ac3bce4fc012e8198b72518db5179e903079858efce08b912d5dcc7094d3
   patches:
     - 0001-Hard-code-constants-that-are-not-present-in-CentOS-6.patch
 
