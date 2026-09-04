@@ -15,6 +15,27 @@ if [[ "${target_platform}" == linux-* ]]; then
     fi
 fi
 
+if [[ "${target_platform}" == osx-* ]]; then
+    # The published conda-forge ncurses package records its "upward" link to
+    # libtinfow via an absolute, un-rewritten build-time placeholder path
+    # (LC_LOAD_UPWARD_DYLIB) instead of @rpath/libtinfow.*.dylib like its own
+    # LC_ID_DYLIB entry. Zig's Mach-O linker appears to crash rather than
+    # cleanly error when it can't resolve that reference (matches the
+    # ncurses-tinfow linker issue worked around above for Linux). Print the
+    # load commands for visibility and repoint any non-@rpath libtinfow
+    # reference so zig resolves it directly within our own prefix.
+    ncursesw_dylib="${PREFIX}/lib/libncursesw.6.dylib"
+    if [[ -f "${ncursesw_dylib}" ]]; then
+        echo "libncursesw.6.dylib load commands:"
+        "${OTOOL}" -L "${ncursesw_dylib}" || true
+        bad_ref=$("${OTOOL}" -L "${ncursesw_dylib}" | awk '/libtinfow/{print $1}' | grep -v '^@rpath/' || true)
+        if [[ -n "${bad_ref}" ]]; then
+            echo "Repointing broken libtinfow reference: ${bad_ref} -> @rpath/libtinfow.6.dylib"
+            "${INSTALL_NAME_TOOL}" -change "${bad_ref}" "@rpath/libtinfow.6.dylib" "${ncursesw_dylib}"
+        fi
+    fi
+fi
+
 case "${target_platform}" in
     linux-64 )
         zig build --prefix "${PREFIX}" -Doptimize=ReleaseFast -Dtarget=x86_64-linux-gnu.2.17 -Dcpu=core2
