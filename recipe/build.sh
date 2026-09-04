@@ -15,6 +15,45 @@ if [[ "${target_platform}" == linux-* ]]; then
     fi
 fi
 
+if [[ "${target_platform}" == osx-* ]]; then
+    # Zig 0.14's self-hosted Mach-O linker crashes ("terminated
+    # unexpectedly", no diagnostic) when linking against ncurses'
+    # libncursesw dylib, which re-exports libtinfow's symbols via
+    # LC_REEXPORT_DYLIB (confirmed via otool -L; using LLD instead is not
+    # an option, Zig 0.14 doesn't support LLD for Mach-O). We don't need
+    # the reexport ourselves since we link tinfow explicitly too, so
+    # neutralize it in our own build-time copy of the dylib by flipping
+    # that one load command's type to a plain LC_LOAD_DYLIB.
+    /usr/bin/python3 - "${PREFIX}/lib/libncursesw.6.dylib" <<'PYEOF'
+import struct
+import sys
+
+path = sys.argv[1]
+with open(path, "rb") as f:
+    data = bytearray(f.read())
+
+if struct.unpack_from("<I", data, 0)[0] != 0xfeedfacf:
+    sys.exit(f"{path}: not a 64-bit Mach-O file, skipping")
+
+ncmds = struct.unpack_from("<I", data, 16)[0]
+LC_REEXPORT_DYLIB = 0x1f | 0x80000000
+LC_LOAD_DYLIB = 0xc
+off = 32
+patched = 0
+for _ in range(ncmds):
+    cmd, cmdsize = struct.unpack_from("<II", data, off)
+    if cmd == LC_REEXPORT_DYLIB:
+        struct.pack_into("<I", data, off, LC_LOAD_DYLIB)
+        patched += 1
+    off += cmdsize
+
+if patched:
+    with open(path, "wb") as f:
+        f.write(data)
+print(f"{path}: neutralized {patched} LC_REEXPORT_DYLIB command(s)")
+PYEOF
+fi
+
 case "${target_platform}" in
     linux-64 )
         zig build --prefix "${PREFIX}" -Doptimize=ReleaseFast -Dtarget=x86_64-linux-gnu.2.17 -Dcpu=core2
