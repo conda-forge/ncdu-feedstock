@@ -11,6 +11,8 @@ package:
 source:
   url: https://dev.yorhel.nl/download/${{ name }}-${{ version }}.tar.gz
   sha256: 75f0ac3bce4fc012e8198b72518db5179e903079858efce08b912d5dcc7094d3
+  patches:
+    - 0001-force-lld-on-macos.patch
 
 build:
   number: 0

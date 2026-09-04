@@ -1,0 +1,16 @@
+diff --git a/build.zig b/build.zig
+index b1708a4..610445c 100644
+--- a/build.zig
++++ b/build.zig
+@@ -29,6 +29,11 @@ pub fn build(b: *std.Build) void {
+     if (target.result.os.tag.isDarwin()) {
+         // useful for package maintainers
+         exe.headerpad_max_install_names = true;
++        // Zig's self-hosted Mach-O linker crashes ("terminated
++        // unexpectedly") when linking against ncurses' libncursesw dylib,
++        // which re-exports symbols from libtinfow via LC_REEXPORT_DYLIB.
++        // Force LLD, which has more mature Mach-O reexport support.
++        exe.use_lld = true;
+     }
+     b.installArtifact(exe);
+ 
