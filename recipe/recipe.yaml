@@ -18,8 +18,15 @@ build:
 
 requirements:
   build:
-    - ${{ compiler('c') }}
-    - ${{ stdlib("c") }}
+    # zig is a self-contained toolchain (bundled clang) and doesn't need a
+    # host C compiler on Linux; keep it on macOS only, since build.sh relies
+    # on ${MACOSX_DEPLOYMENT_TARGET} being exported by its activation.
+    # On linux-aarch64, pulling these in also conflicts with zig's own
+    # `sysroot_linux-aarch64 >=2.28` dependency against our `2.17.*` pin.
+    - if: osx
+      then:
+        - ${{ compiler('c') }}
+        - ${{ stdlib("c") }}
     - zig 0.14.*
     - pkg-config
   host:
