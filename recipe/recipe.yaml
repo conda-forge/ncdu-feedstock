@@ -1,22 +1,25 @@
-{% set name = "ncdu" %}
-{% set version = "2.9" %}
+schema_version: 1
+
+context:
+  name: ncdu
+  version: "2.9"
 
 package:
-  name: {{ name|lower }}
-  version: "{{ version }}"
+  name: ${{ name|lower }}
+  version: ${{ version }}
 
 source:
-  url: https://dev.yorhel.nl/download/{{ name }}-{{ version }}.tar.gz
+  url: https://dev.yorhel.nl/download/${{ name }}-${{ version }}.tar.gz
   sha256: 75f0ac3bce4fc012e8198b72518db5179e903079858efce08b912d5dcc7094d3
 
 build:
   number: 0
-  skip: true  # [win or ppc64le]
+  skip: win or ppc64le
 
 requirements:
   build:
-    - {{ compiler('c') }}
-    - {{ stdlib("c") }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
     - zig 0.14.*
     - pkg-config
   host:
@@ -26,12 +29,11 @@ requirements:
     - ncurses
     - zstd
 
-test:
-  commands:
-    - ncdu --version
+tests:
+  - script:
+      - ncdu --version
 
 about:
-  home: https://dev.yorhel.nl/ncdu
   license: MIT
   license_file: LICENSES/MIT.txt
   summary: NCurses Disk Usage
@@ -41,8 +43,9 @@ about:
     setup available, but it is a useful tool even on regular desktop systems.
     Ncdu aims to be fast, simple and easy to use, and should be able to run
     in any minimal POSIX-like environment with ncurses installed.
-  doc_url: https://dev.yorhel.nl/ncdu/man
-  dev_url: https://g.blicky.net/ncdu.git/
+  homepage: https://dev.yorhel.nl/ncdu
+  repository: https://g.blicky.net/ncdu.git/
+  documentation: https://dev.yorhel.nl/ncdu/man
 
 extra:
   recipe-maintainers:

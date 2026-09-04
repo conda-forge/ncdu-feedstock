@@ -19,7 +19,6 @@ setup available, but it is a useful tool even on regular desktop systems.
 Ncdu aims to be fast, simple and easy to use, and should be able to run
 in any minimal POSIX-like environment with ncurses installed.
 
-
 Current build status
 ====================
 
