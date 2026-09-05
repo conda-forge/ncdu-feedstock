@@ -3,11 +3,13 @@ set -euo pipefail
 IFS=$'\n\t'
 
 if [[ "${target_platform}" == linux-* ]]; then
-    # Zig 0.14's linker cannot resolve the "-ltinfow" reference that ncurses'
+    # Zig's linker cannot resolve the "-ltinfow" reference that ncurses'
     # libncursesw.so dev symlink embeds as a GNU ld linker script
     # (INPUT(libncursesw.so.6 -ltinfow)); it fails with "unable to find
     # library -ltinfow" even though the file is right there. Replace it with
     # a plain symlink to the real versioned library so zig links it directly.
+    # Still required on 0.15.2, which reports it as "ld.lld: unable to find
+    # library -ltinfow" (verified by building with this block removed).
     ncursesw_so="${PREFIX}/lib/libncursesw.so"
     if [[ -f "${ncursesw_so}" ]] && [[ "$(head -c4 "${ncursesw_so}")" != $'\x7fELF' ]]; then
         real_lib=$(grep -oE 'libncursesw\.so\.[0-9]+(\.[0-9]+)*' "${ncursesw_so}" | head -n1)
@@ -16,11 +18,13 @@ if [[ "${target_platform}" == linux-* ]]; then
 fi
 
 if [[ "${target_platform}" == osx-* ]]; then
-    # Zig 0.14's self-hosted Mach-O linker crashes ("terminated
-    # unexpectedly", no diagnostic) when linking against ncurses'
-    # libncursesw dylib, which re-exports libtinfow's symbols via
-    # LC_REEXPORT_DYLIB (confirmed via otool -L; using LLD instead is not
-    # an option, Zig 0.14 doesn't support LLD for Mach-O). We don't need the
+    # Zig's self-hosted Mach-O linker crashes ("terminated unexpectedly",
+    # no diagnostic) when linking against ncurses' libncursesw dylib, which
+    # re-exports libtinfow's symbols via LC_REEXPORT_DYLIB (confirmed via
+    # otool -L; forcing LLD was not an option on 0.14, which dropped LLD for
+    # Mach-O). Diagnosed against zig 0.14 and NOT re-verified since the move
+    # to 0.15.2 -- it may now be unnecessary, but removing it needs a macOS
+    # CI run to confirm. Harmless if redundant. We don't need the
     # reexport ourselves, since pkg-config already puts -ltinfow on the link
     # line and the built binary loads libtinfow directly, so neutralize that
     # one load command by flipping its type to a plain LC_LOAD_DYLIB.
@@ -65,8 +69,8 @@ PYEOF
 fi
 
 # The glibc minor in each -Dtarget triple is the floor the binary actually has,
-# and must stay in step with the __glibc bound the recipe declares for that
-# platform (via stdlib("c"), or directly in run: for linux-aarch64).
+# and must stay in step with c_stdlib_version, which is what stdlib("c")'s
+# run-export turns into the package's __glibc bound.
 case "${target_platform}" in
     linux-64 )
         zig build --prefix "${PREFIX}" -Doptimize=ReleaseFast -Dtarget=x86_64-linux-gnu.2.17 -Dcpu=core2

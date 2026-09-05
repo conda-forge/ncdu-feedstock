@@ -2,7 +2,7 @@ schema_version: 1
 
 context:
   name: ncdu
-  version: "2.9"
+  version: "2.9.2"
 
 package:
   name: ${{ name|lower }}
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://dev.yorhel.nl/download/${{ name }}-${{ version }}.tar.gz
-  sha256: 75f0ac3bce4fc012e8198b72518db5179e903079858efce08b912d5dcc7094d3
+  sha256: e91135281cb66569f2ca4c0bac277246991e7e52524c0ca8cba3de5c8e81cec9
 
 build:
   number: 0
@@ -24,23 +24,12 @@ requirements:
     - if: osx
       then:
         - ${{ compiler('c') }}
-    # stdlib("c")'s run-export is what records the libc floor (__glibc >=x.y on
-    # Linux, __osx >=x.y on macOS) matching the zig -Dtarget triples in
-    # build.sh. Without it the package declares no libc requirement at all and
-    # installs happily on hosts too old to run it.
-    #
-    # linux-aarch64 is the exception. There stdlib("c") pins
-    # sysroot_linux-aarch64 to c_stdlib_version, and every available value is
-    # wrong: 2.17 (the floor this binary actually has) is unsolvable against
-    # zig's own `sysroot_linux-aarch64 >=2.28`, while 2.28 both overstates the
-    # requirement and *downgrades* the sysroot zig links against from the 2.39
-    # it otherwise pulls in, which segfaults zig 0.14. So leave the aarch64
-    # build environment exactly as zig wants it and state the bound directly
-    # in run: instead.
-    - if: target_platform != "linux-aarch64"
-      then:
-        - ${{ stdlib("c") }}
-    - zig 0.14.*
+    # stdlib("c")'s run-export records the libc floor (__glibc >=x.y on Linux,
+    # __osx >=x.y on macOS) matching the zig -Dtarget triples in build.sh.
+    # Without it the package declares no libc requirement at all and installs
+    # happily on hosts too old to run it.
+    - ${{ stdlib("c") }}
+    - zig >=0.15.2,<0.16
     - pkg-config
   host:
     - ncurses
@@ -48,11 +37,6 @@ requirements:
   run:
     - ncurses
     - zstd
-    # The bound stdlib("c") would have supplied everywhere else; it matches
-    # -Dtarget=aarch64-linux-gnu.2.17 in build.sh.
-    - if: target_platform == "linux-aarch64"
-      then:
-        - __glibc >=2.17
 
 tests:
   - script:
