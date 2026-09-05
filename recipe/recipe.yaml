@@ -32,9 +32,9 @@ requirements:
     - zig >=0.15.2,<0.16
     - pkg-config
   host:
-    - ncurses
-    - zstd
-  run:
+    # Both carry run_exports, which pin the runtime requirement (ncurses
+    # >=6.6,<7.0a0, zstd >=1.5.7,<1.6.0a0) more precisely than an explicit
+    # unpinned run: entry would, so there is no run: section.
     - ncurses
     - zstd
 
