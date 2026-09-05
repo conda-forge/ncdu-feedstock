@@ -43,6 +43,15 @@ requirements:
 tests:
   - script:
       - ncdu --version
+  - package_contents:
+      # strict: the payload is only the binary zig installs and the man page
+      # build.sh installs by hand, so anything else appearing (a stray zig
+      # cache directory, a silently relocated man page) fails the build.
+      strict: true
+      bin:
+        - ncdu
+      files:
+        - share/man/man1/ncdu.1
 
 about:
   license: MIT
