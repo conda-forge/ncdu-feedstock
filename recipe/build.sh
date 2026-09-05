@@ -84,23 +84,20 @@ for path in sys.argv[1:]:
 PYEOF
 fi
 
-# The glibc minor in each -Dtarget triple is the floor the binary actually has,
-# and must stay in step with c_stdlib_version, which is what stdlib("c")'s
-# run-export turns into the package's __glibc bound.
+# Each triple's libc component comes from CONDA_C_STDLIB_VERSION (recipe.yaml
+# passes c_stdlib_version), so the floor the binary is built against cannot
+# drift from the one stdlib("c") declares. -Dcpu pins a portable baseline
+# rather than letting zig infer the builder's CPU.
+: "${CONDA_C_STDLIB_VERSION:?must be passed from recipe.yaml (c_stdlib_version)}"
+zig_args=(--prefix "${PREFIX}" -Doptimize=ReleaseFast)
 case "${target_platform}" in
-    linux-64 )
-        zig build --prefix "${PREFIX}" -Doptimize=ReleaseFast -Dtarget=x86_64-linux-gnu.2.17 -Dcpu=core2
-        ;;
-    linux-aarch64 )
-        zig build --prefix "${PREFIX}" -Doptimize=ReleaseFast -Dtarget=aarch64-linux-gnu.2.17 -Dcpu=generic
-        ;;
-    osx-64 )
-        zig build --prefix "${PREFIX}" -Dpie=true -Doptimize=ReleaseFast -Dtarget=x86_64-macos.${MACOSX_DEPLOYMENT_TARGET} -Dcpu=core2
-        ;;
-    osx-arm64 )
-        zig build --prefix "${PREFIX}" -Dpie=true -Doptimize=ReleaseFast -Dtarget=aarch64-macos.${MACOSX_DEPLOYMENT_TARGET} -Dcpu=apple_m1
-        ;;
+    linux-64 )      zig_args+=(-Dtarget="x86_64-linux-gnu.${CONDA_C_STDLIB_VERSION}"  -Dcpu=core2) ;;
+    linux-aarch64 ) zig_args+=(-Dtarget="aarch64-linux-gnu.${CONDA_C_STDLIB_VERSION}" -Dcpu=generic) ;;
+    osx-64 )        zig_args+=(-Dtarget="x86_64-macos.${CONDA_C_STDLIB_VERSION}"      -Dcpu=core2    -Dpie=true) ;;
+    osx-arm64 )     zig_args+=(-Dtarget="aarch64-macos.${CONDA_C_STDLIB_VERSION}"     -Dcpu=apple_m1 -Dpie=true) ;;
+    * ) echo "error: unsupported target_platform ${target_platform}" >&2; exit 1 ;;
 esac
+zig build "${zig_args[@]}"
 
 mkdir -p "${PREFIX}/share/man/man1"
 install -m 644 ncdu.1 "${PREFIX}/share/man/man1/ncdu.1"
