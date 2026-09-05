@@ -15,12 +15,23 @@ source:
 build:
   number: 0
   skip: win or ppc64le
+  script:
+    file: build
+    env:
+      # The libc floor to compile against. Passing the variant means the
+      # binary's actual floor and the __glibc/__osx bound stdlib("c")
+      # declares are the same number rather than two kept in sync by hand.
+      # default("") keeps the win-64 render working, where the recipe is
+      # skipped and c_stdlib_version is undefined; build.sh rejects an empty
+      # value, so a real platform missing it fails loudly rather than
+      # producing a truncated target triple.
+      CONDA_C_STDLIB_VERSION: ${{ c_stdlib_version | default("") }}
 
 requirements:
   build:
-    # zig bundles its own clang and never invokes a host C compiler; this is
-    # here only for macOS, where build.sh reads ${MACOSX_DEPLOYMENT_TARGET}
-    # from its activation.
+    # zig bundles its own clang and never invokes a host C compiler, so this
+    # is likely droppable; it is kept because verifying that needs a macOS CI
+    # run, and the macOS legs of this recipe have been the fragile ones.
     - if: osx
       then:
         - ${{ compiler('c') }}
