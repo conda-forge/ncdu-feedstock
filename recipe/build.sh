@@ -20,37 +20,47 @@ if [[ "${target_platform}" == osx-* ]]; then
     # unexpectedly", no diagnostic) when linking against ncurses'
     # libncursesw dylib, which re-exports libtinfow's symbols via
     # LC_REEXPORT_DYLIB (confirmed via otool -L; using LLD instead is not
-    # an option, Zig 0.14 doesn't support LLD for Mach-O). We don't need
-    # the reexport ourselves since we link tinfow explicitly too, so
-    # neutralize it in our own build-time copy of the dylib by flipping
-    # that one load command's type to a plain LC_LOAD_DYLIB.
-    /usr/bin/python3 - "${PREFIX}/lib/libncursesw.6.dylib" <<'PYEOF'
+    # an option, Zig 0.14 doesn't support LLD for Mach-O). We don't need the
+    # reexport ourselves, since pkg-config already puts -ltinfow on the link
+    # line and the built binary loads libtinfow directly, so neutralize that
+    # one load command by flipping its type to a plain LC_LOAD_DYLIB.
+    # Only the throwaway build prefix is touched: rattler-build packages
+    # newly created paths, so this modified dylib is never shipped.
+    shopt -s nullglob
+    ncursesw_dylibs=("${PREFIX}"/lib/libncursesw.[0-9]*.dylib)
+    shopt -u nullglob
+    if [[ ${#ncursesw_dylibs[@]} -eq 0 ]]; then
+        echo "error: no libncursesw.<soversion>.dylib found in ${PREFIX}/lib" >&2
+        exit 1
+    fi
+    /usr/bin/python3 - "${ncursesw_dylibs[@]}" <<'PYEOF'
 import struct
 import sys
 
-path = sys.argv[1]
-with open(path, "rb") as f:
-    data = bytearray(f.read())
+for path in sys.argv[1:]:
+    with open(path, "rb") as f:
+        data = bytearray(f.read())
 
-if struct.unpack_from("<I", data, 0)[0] != 0xfeedfacf:
-    sys.exit(f"{path}: not a 64-bit Mach-O file, skipping")
+    if struct.unpack_from("<I", data, 0)[0] != 0xfeedfacf:
+        print(f"{path}: not a 64-bit Mach-O file, skipping")
+        continue
 
-ncmds = struct.unpack_from("<I", data, 16)[0]
-LC_REEXPORT_DYLIB = 0x1f | 0x80000000
-LC_LOAD_DYLIB = 0xc
-off = 32
-patched = 0
-for _ in range(ncmds):
-    cmd, cmdsize = struct.unpack_from("<II", data, off)
-    if cmd == LC_REEXPORT_DYLIB:
-        struct.pack_into("<I", data, off, LC_LOAD_DYLIB)
-        patched += 1
-    off += cmdsize
+    ncmds = struct.unpack_from("<I", data, 16)[0]
+    LC_REEXPORT_DYLIB = 0x1f | 0x80000000
+    LC_LOAD_DYLIB = 0xc
+    off = 32
+    patched = 0
+    for _ in range(ncmds):
+        cmd, cmdsize = struct.unpack_from("<II", data, off)
+        if cmd == LC_REEXPORT_DYLIB:
+            struct.pack_into("<I", data, off, LC_LOAD_DYLIB)
+            patched += 1
+        off += cmdsize
 
-if patched:
-    with open(path, "wb") as f:
-        f.write(data)
-print(f"{path}: neutralized {patched} LC_REEXPORT_DYLIB command(s)")
+    if patched:
+        with open(path, "wb") as f:
+            f.write(data)
+    print(f"{path}: neutralized {patched} LC_REEXPORT_DYLIB command(s)")
 PYEOF
 fi
 
