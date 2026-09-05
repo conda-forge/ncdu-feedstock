@@ -3,13 +3,23 @@ set -euo pipefail
 IFS=$'\n\t'
 
 if [[ "${target_platform}" == linux-* ]]; then
-    # Zig's linker cannot resolve the "-ltinfow" reference that ncurses'
-    # libncursesw.so dev symlink embeds as a GNU ld linker script
-    # (INPUT(libncursesw.so.6 -ltinfow)); it fails with "unable to find
-    # library -ltinfow" even though the file is right there. Replace it with
-    # a plain symlink to the real versioned library so zig links it directly.
-    # Still required on 0.15.2, which reports it as "ld.lld: unable to find
-    # library -ltinfow" (verified by building with this block removed).
+    # ncurses splits terminfo out into libtinfow, and ships libncursesw.so as
+    # a GNU ld linker script (INPUT(libncursesw.so.6 -ltinfow)) rather than a
+    # symlink, so that a bare -lncursesw still resolves terminfo symbols
+    # (DT_NEEDED alone does not, with --no-copy-dt-needed-entries).
+    #
+    # Zig cannot consume that. It either fails to parse the script as ELF
+    # ("failed to parse shared library: UnexpectedEndOfFile") or, where LLD
+    # does parse it, cannot resolve the nested -l ("ld.lld: unable to find
+    # library -ltinfow"). This is a known, still-open upstream bug, reported
+    # against ncdu itself while packaging it for Fedora:
+    #   https://github.com/ziglang/zig/issues/23849
+    #
+    # Replace the script with a plain symlink to the real library. Nothing is
+    # lost: ncursesw.pc puts -ltinfow on the link line regardless, which is
+    # where the binary's libtinfow dependency actually comes from. Still
+    # required on 0.15.2 (verified by building with this block removed); drop
+    # it once the zig issue is fixed.
     ncursesw_so="${PREFIX}/lib/libncursesw.so"
     if [[ -f "${ncursesw_so}" ]] && [[ "$(head -c4 "${ncursesw_so}")" != $'\x7fELF' ]]; then
         real_lib=$(grep -oE 'libncursesw\.so\.[0-9]+(\.[0-9]+)*' "${ncursesw_so}" | head -n1)
@@ -18,18 +28,24 @@ if [[ "${target_platform}" == linux-* ]]; then
 fi
 
 if [[ "${target_platform}" == osx-* ]]; then
-    # Zig's self-hosted Mach-O linker crashes ("terminated unexpectedly",
-    # no diagnostic) when linking against ncurses' libncursesw dylib, which
-    # re-exports libtinfow's symbols via LC_REEXPORT_DYLIB (confirmed via
-    # otool -L; forcing LLD was not an option on 0.14, which dropped LLD for
-    # Mach-O). Diagnosed against zig 0.14 and NOT re-verified since the move
-    # to 0.15.2 -- it may now be unnecessary, but removing it needs a macOS
-    # CI run to confirm. Harmless if redundant. We don't need the
-    # reexport ourselves, since pkg-config already puts -ltinfow on the link
-    # line and the built binary loads libtinfow directly, so neutralize that
-    # one load command by flipping its type to a plain LC_LOAD_DYLIB.
-    # Only the throwaway build prefix is touched: rattler-build packages
-    # newly created paths, so this modified dylib is never shipped.
+    # The Mach-O face of the same ncurses terminfo split as above: with no
+    # linker-script format, libncursesw.6.dylib instead re-exports libtinfow's
+    # symbols (LC_REEXPORT_DYLIB, confirmed via otool -L) so that a bare
+    # -lncursesw stays sufficient.
+    #
+    # Zig's self-hosted Mach-O linker crashes on that re-export ("terminated
+    # unexpectedly", no diagnostic). Forcing LLD instead was not an option on
+    # 0.14, which had dropped LLD for Mach-O.
+    #
+    # We do not need the re-export ourselves: pkg-config puts -ltinfow on the
+    # link line regardless, and the built binary loads libtinfow directly. So
+    # flip that one load command to a plain LC_LOAD_DYLIB. Only the throwaway
+    # build prefix is touched -- rattler-build packages newly created paths,
+    # so the modified dylib is never shipped.
+    #
+    # Diagnosed against zig 0.14 and NOT re-verified since the move to 0.15.2;
+    # it may now be unnecessary, but dropping it needs a macOS CI run to
+    # confirm. Harmless if redundant.
     shopt -s nullglob
     ncursesw_dylibs=("${PREFIX}"/lib/libncursesw.[0-9]*.dylib)
     shopt -u nullglob
