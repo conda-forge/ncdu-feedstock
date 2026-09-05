@@ -24,13 +24,22 @@ requirements:
     - if: osx
       then:
         - ${{ compiler('c') }}
-    # stdlib("c") is needed on every platform: its run-export is what records
-    # the libc floor (__glibc >=x.y on Linux, __osx >=x.y on macOS) matching
-    # the zig -Dtarget triples in build.sh. Without it the package declares no
-    # libc requirement at all and installs happily on hosts too old to run it.
-    # conda_build_config.yaml raises linux-aarch64 to 2.28, the only value
-    # solvable against zig's own `sysroot_linux-aarch64 >=2.28` dependency.
-    - ${{ stdlib("c") }}
+    # stdlib("c")'s run-export is what records the libc floor (__glibc >=x.y on
+    # Linux, __osx >=x.y on macOS) matching the zig -Dtarget triples in
+    # build.sh. Without it the package declares no libc requirement at all and
+    # installs happily on hosts too old to run it.
+    #
+    # linux-aarch64 is the exception. There stdlib("c") pins
+    # sysroot_linux-aarch64 to c_stdlib_version, and every available value is
+    # wrong: 2.17 (the floor this binary actually has) is unsolvable against
+    # zig's own `sysroot_linux-aarch64 >=2.28`, while 2.28 both overstates the
+    # requirement and *downgrades* the sysroot zig links against from the 2.39
+    # it otherwise pulls in, which segfaults zig 0.14. So leave the aarch64
+    # build environment exactly as zig wants it and state the bound directly
+    # in run: instead.
+    - if: target_platform != "linux-aarch64"
+      then:
+        - ${{ stdlib("c") }}
     - zig 0.14.*
     - pkg-config
   host:
@@ -39,6 +48,11 @@ requirements:
   run:
     - ncurses
     - zstd
+    # The bound stdlib("c") would have supplied everywhere else; it matches
+    # -Dtarget=aarch64-linux-gnu.2.17 in build.sh.
+    - if: target_platform == "linux-aarch64"
+      then:
+        - __glibc >=2.17
 
 tests:
   - script:
