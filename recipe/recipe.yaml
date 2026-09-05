@@ -18,15 +18,19 @@ build:
 
 requirements:
   build:
-    # zig is a self-contained toolchain (bundled clang) and doesn't need a
-    # host C compiler on Linux; keep it on macOS only, since build.sh relies
-    # on ${MACOSX_DEPLOYMENT_TARGET} being exported by its activation.
-    # On linux-aarch64, pulling these in also conflicts with zig's own
-    # `sysroot_linux-aarch64 >=2.28` dependency against our `2.17.*` pin.
+    # zig is a self-contained toolchain (bundled clang) and never invokes a
+    # host C compiler, so compiler('c') is only wanted on macOS, where
+    # build.sh reads ${MACOSX_DEPLOYMENT_TARGET} from its activation.
     - if: osx
       then:
         - ${{ compiler('c') }}
-        - ${{ stdlib("c") }}
+    # stdlib("c") is needed on every platform: its run-export is what records
+    # the libc floor (__glibc >=x.y on Linux, __osx >=x.y on macOS) matching
+    # the zig -Dtarget triples in build.sh. Without it the package declares no
+    # libc requirement at all and installs happily on hosts too old to run it.
+    # conda_build_config.yaml raises linux-aarch64 to 2.28, the only value
+    # solvable against zig's own `sysroot_linux-aarch64 >=2.28` dependency.
+    - ${{ stdlib("c") }}
     - zig 0.14.*
     - pkg-config
   host:

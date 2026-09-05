@@ -54,12 +54,15 @@ print(f"{path}: neutralized {patched} LC_REEXPORT_DYLIB command(s)")
 PYEOF
 fi
 
+# The glibc minor in each -Dtarget triple must match c_stdlib_version for that
+# platform (see recipe/conda_build_config.yaml), so the __glibc bound declared
+# by the stdlib run-export is the one the binary was actually built against.
 case "${target_platform}" in
     linux-64 )
         zig build --prefix "${PREFIX}" -Doptimize=ReleaseFast -Dtarget=x86_64-linux-gnu.2.17 -Dcpu=core2
         ;;
     linux-aarch64 )
-        zig build --prefix "${PREFIX}" -Doptimize=ReleaseFast -Dtarget=aarch64-linux-gnu.2.17 -Dcpu=generic
+        zig build --prefix "${PREFIX}" -Doptimize=ReleaseFast -Dtarget=aarch64-linux-gnu.2.28 -Dcpu=generic
         ;;
     osx-64 )
         zig build --prefix "${PREFIX}" -Dpie=true -Doptimize=ReleaseFast -Dtarget=x86_64-macos.${MACOSX_DEPLOYMENT_TARGET} -Dcpu=core2
