@@ -18,23 +18,18 @@ build:
 
 requirements:
   build:
-    # zig is a self-contained toolchain (bundled clang) and never invokes a
-    # host C compiler, so compiler('c') is only wanted on macOS, where
-    # build.sh reads ${MACOSX_DEPLOYMENT_TARGET} from its activation.
+    # zig bundles its own clang and never invokes a host C compiler; this is
+    # here only for macOS, where build.sh reads ${MACOSX_DEPLOYMENT_TARGET}
+    # from its activation.
     - if: osx
       then:
         - ${{ compiler('c') }}
-    # stdlib("c")'s run-export records the libc floor (__glibc >=x.y on Linux,
-    # __osx >=x.y on macOS) matching the zig -Dtarget triples in build.sh.
-    # Without it the package declares no libc requirement at all and installs
-    # happily on hosts too old to run it.
+    # Needed even though zig is self-contained: this supplies the package's
+    # __glibc/__osx floor, which must match build.sh's -Dtarget triples.
     - ${{ stdlib("c") }}
     - zig >=0.15.2,<0.16
     - pkg-config
   host:
-    # Both carry run_exports, which pin the runtime requirement (ncurses
-    # >=6.6,<7.0a0, zstd >=1.5.7,<1.6.0a0) more precisely than an explicit
-    # unpinned run: entry would, so there is no run: section.
     - ncurses
     - zstd
 
@@ -42,9 +37,7 @@ tests:
   - script:
       - ncdu --version
   - package_contents:
-      # strict: the payload is only the binary zig installs and the man page
-      # build.sh installs by hand, so anything else appearing (a stray zig
-      # cache directory, a silently relocated man page) fails the build.
+      # The whole payload is these two files, so strict costs nothing.
       strict: true
       bin:
         - ncdu
